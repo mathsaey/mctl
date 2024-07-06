@@ -1,0 +1,9 @@
+[package]
+name = "led_matrix_serial_api"
+description = "Bindings for the framework LED Matrix Serial API"
+authors = ["Mathijs Saey"]
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serialport = "4.3.0"

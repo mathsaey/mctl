@@ -1,0 +1,3 @@
+[workspace]
+members = ["led_matrix_serial_api", "mctl"]
+resolver = "2"
