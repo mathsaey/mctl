@@ -1,6 +1,9 @@
 use led_matrix_serial_api::{LedMatrix, Error};
 use std::{thread, time::Duration};
 
+mod patterns;
+pub use patterns::*;
+
 pub fn open(brightness: u8) -> Result<LedMatrix, Error> {
     let mut matrix = LedMatrix::open_all()?;
     matrix.set_brightness(brightness)?;

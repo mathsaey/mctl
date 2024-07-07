@@ -9,7 +9,7 @@ struct Cli {
     #[command(subcommand)]
     command: Commands,
 
-    #[arg(short, long, default_value_t = 10, verbatim_doc_comment)]
+    #[arg(short, long, default_value_t = 20, verbatim_doc_comment)]
     /// Set default pixel brightness
     /// Values can range from 0 to 255
     brightness: u8,
@@ -37,8 +37,16 @@ enum Commands {
     #[command(alias = "p")]
     Percent{
         percent: u8
+    },
+
+    Speaker{
+        #[command(subcommand)]
+        status: SpeakerStatus
     }
 }
+
+#[derive(Subcommand, Debug)]
+enum SpeakerStatus { On, Off }
 
 fn setup_logger(args: &Cli) {
     if !args.quiet {
@@ -63,7 +71,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match args.command {
         Commands::Percent{percent: p} => {
-            matrix.percent(p).unwrap()
+            matrix.percent(p)?;
+        },
+        Commands::Speaker{status} => {
+            match status {
+                SpeakerStatus::On => matrix::draw_speaker_on(&mut matrix),
+                SpeakerStatus::Off => matrix::draw_speaker_mute(&mut matrix)
+            }?;
         }
     }
 
