@@ -1,4 +1,4 @@
-use led_matrix_serial_api::{LedMatrix, Error};
+use led_matrix_serial_api::{Error, LedMatrix};
 use std::{thread, time::Duration};
 
 mod patterns;

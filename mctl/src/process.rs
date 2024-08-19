@@ -1,4 +1,7 @@
-use std::{io, ffi::OsString, fs, fs::DirEntry, os::linux::fs::MetadataExt, process};
+use std::{
+    ffi::OsString, fs, fs::DirEntry, io, os::linux::fs::MetadataExt, process, thread,
+    time::Duration,
+};
 
 const BIN_NAME: &str = env!("CARGO_BIN_NAME");
 
@@ -60,5 +63,11 @@ pub fn kill_other_mctl_processes() {
         .for_each(|pid| {
             log::info!("Stopping existing mctl process {}", pid);
             unsafe { libc::kill(pid as i32, libc::SIGTERM) };
+            // Temporary workaround for race condition.
+            // Sometimes the process is not killed yet by the time we try to open the serial port
+            // Use a lock file?
+            // https://old.reddit.com/r/rust/comments/14hlx8u/a_rusty_way_to_check_if_another_instance_is/
+            // Consider locking the file using libc
+            thread::sleep(Duration::from_millis(30));
         })
 }
