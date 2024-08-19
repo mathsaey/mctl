@@ -1,10 +1,11 @@
 use clap::{Parser, Subcommand};
+use std::cmp::min;
 
 mod matrix;
 mod process;
 
-#[derive(Parser,Debug)]
-#[command(version, about, disable_version_flag = true, trailing_var_arg = true)]
+#[derive(Parser, Debug)]
+#[command(version, about, trailing_var_arg = true)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -20,41 +21,46 @@ struct Cli {
     timeout: u64,
 
     #[arg(short, long)]
-    /// Don't print log messages
+    /// Don't print log messages, overrides verbose
     quiet: bool,
 
-    #[arg(long, verbatim_doc_comment)]
-    /// Don't write a lockfile.
-    no_lock: bool,
-
-    #[arg(short = 'v', long, action = clap::builder::ArgAction::Version)]
-    /// Print version
-    version: (),
+    #[arg(short, long, action = clap::ArgAction::Count)]
+    /// Increase verbosity, repeat to become more verbose
+    verbose: u8,
 }
 
 #[derive(Subcommand, Debug)]
 enum Commands {
     #[command(alias = "p")]
-    Percent{
-        percent: u8
-    },
+    Percent { percent: u8 },
 
-    Speaker{
+    Speaker {
         #[command(subcommand)]
-        status: SpeakerStatus
-    }
+        status: SpeakerStatus,
+    },
 }
 
 #[derive(Subcommand, Debug)]
-enum SpeakerStatus { On, Off }
+enum SpeakerStatus {
+    On,
+    Off,
+}
 
 fn setup_logger(args: &Cli) {
-    if !args.quiet {
-        env_logger::Builder::new()
-            .filter_level(log::LevelFilter::Warn)
-            .format_target(false)
-            .init();
-    }
+    const DEFAULT_VERBOSITY: u8 = 2;
+    let filter = match if args.quiet { 0 } else { DEFAULT_VERBOSITY + args.verbose } {
+        0 => log::LevelFilter::Off,
+        1 => log::LevelFilter::Error,
+        2 => log::LevelFilter::Warn,
+        3 => log::LevelFilter::Info,
+        _ => log::LevelFilter::Trace,
+    };
+
+    env_logger::Builder::new()
+        .filter_level(filter)
+        .format_target(false)
+        .format_level(false)
+        .init();
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -70,13 +76,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     log::info!("Connected to {:}", matrix);
 
     match args.command {
-        Commands::Percent{percent: p} => {
-            matrix.percent(p)?;
-        },
-        Commands::Speaker{status} => {
+        Commands::Percent { percent: p } => {
+            matrix.percent(min(p, 100))?;
+        }
+        Commands::Speaker { status } => {
             match status {
                 SpeakerStatus::On => matrix::draw_speaker_on(&mut matrix),
-                SpeakerStatus::Off => matrix::draw_speaker_mute(&mut matrix)
+                SpeakerStatus::Off => matrix::draw_speaker_mute(&mut matrix),
             }?;
         }
     }
